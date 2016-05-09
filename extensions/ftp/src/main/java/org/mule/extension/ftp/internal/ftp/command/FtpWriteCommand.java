@@ -4,35 +4,39 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
-package org.mule.extension.ftp.internal.command;
+package org.mule.extension.ftp.internal.ftp.command;
 
 import static java.lang.String.format;
-import org.mule.runtime.core.api.MuleEvent;
 import org.mule.extension.ftp.api.FtpConnector;
-import org.mule.extension.ftp.api.FtpFileSystem;
+import org.mule.extension.ftp.internal.ftp.connection.ClassicFtpFileSystem;
+import org.mule.runtime.api.message.MuleEvent;
 import org.mule.runtime.module.extension.file.api.FileAttributes;
-import org.mule.runtime.module.extension.file.api.FileWriteMode;
-import org.mule.runtime.module.extension.file.api.command.WriteCommand;
 import org.mule.runtime.module.extension.file.api.FileContentWrapper;
+import org.mule.runtime.module.extension.file.api.FileWriteMode;
 import org.mule.runtime.module.extension.file.api.FileWriterVisitor;
+import org.mule.runtime.module.extension.file.api.command.WriteCommand;
 
 import java.io.OutputStream;
 import java.nio.file.Path;
 
 import org.apache.commons.net.ftp.FTPClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A {@link FtpCommand} which implements the {@link WriteCommand} contract
+ * A {@link ClassicFtpCommand} which implements the {@link WriteCommand} contract
  *
  * @since 4.0
  */
-public final class FtpWriteCommand extends FtpCommand implements WriteCommand
+public final class FtpWriteCommand extends ClassicFtpCommand implements WriteCommand
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FtpWriteCommand.class);
 
     /**
      * {@inheritDoc}
      */
-    public FtpWriteCommand(FtpFileSystem fileSystem, FtpConnector config, FTPClient client)
+    public FtpWriteCommand(ClassicFtpFileSystem fileSystem, FtpConnector config, FTPClient client)
     {
         super(fileSystem, config, client);
     }
@@ -66,6 +70,7 @@ public final class FtpWriteCommand extends FtpCommand implements WriteCommand
         try (OutputStream outputStream = getOutputStream(path.toString(), mode))
         {
             new FileContentWrapper(content, event).accept(new FileWriterVisitor(outputStream, event));
+            LOGGER.debug("Successfully wrote to path {}", path.toString());
         }
         catch (Exception e)
         {
@@ -88,28 +93,6 @@ public final class FtpWriteCommand extends FtpCommand implements WriteCommand
         catch (Exception e)
         {
             throw exception(String.format("Could not open stream to write to path '%s' using mode '%s'", path, mode), e);
-        }
-    }
-
-    private void assureParentFolderExists(Path filePath, boolean createParentFolder)
-    {
-        Path parentFolderPath = filePath.getParent();
-        if (parentFolderPath == null)
-        {
-            return;
-        }
-
-        FileAttributes parentFolder = getFile(parentFolderPath.toString());
-        if (parentFolder == null)
-        {
-            if (createParentFolder)
-            {
-                mkdirs(parentFolderPath);
-            }
-            else
-            {
-                throw new IllegalArgumentException(format("Cannot write to file '%s' because path to it doesn't exist. Consider setting the 'createParentFolder' attribute to 'true'", filePath));
-            }
         }
     }
 }

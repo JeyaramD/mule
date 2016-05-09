@@ -7,7 +7,7 @@
 package org.mule.runtime.module.extension.file.api;
 
 import static org.mule.runtime.core.config.i18n.MessageFactory.createStaticMessage;
-import org.mule.runtime.core.api.MuleEvent;
+import org.mule.runtime.api.message.MuleEvent;
 import org.mule.runtime.core.api.MuleRuntimeException;
 import org.mule.runtime.core.message.OutputHandler;
 import org.mule.runtime.core.util.IOUtils;
@@ -61,7 +61,7 @@ public class FileWriterVisitor implements FileContentVisitor
     @Override
     public void visit(OutputHandler handler) throws Exception
     {
-        handler.write(event, outputStream);
+        handler.write((org.mule.runtime.core.api.MuleEvent) event, outputStream);
     }
 
     @Override

@@ -7,7 +7,7 @@
 package org.mule.runtime.module.extension.file.api;
 
 import static org.mule.runtime.core.util.Preconditions.checkArgument;
-import org.mule.runtime.core.api.MuleEvent;
+import org.mule.runtime.api.message.MuleEvent;
 import org.mule.runtime.api.metadata.DataType;
 import org.mule.runtime.core.api.transformer.MessageTransformer;
 import org.mule.runtime.core.api.transformer.Transformer;
@@ -130,7 +130,7 @@ public final class FileContentWrapper
         Transformer transformer;
         try
         {
-            transformer = event.getMuleContext().getRegistry().lookupTransformer(sourceDataType, targetDataType);
+            transformer = castEvent().getMuleContext().getRegistry().lookupTransformer(sourceDataType, targetDataType);
         }
         catch (TransformerException e)
         {
@@ -145,7 +145,7 @@ public final class FileContentWrapper
         {
             if (transformer instanceof MessageTransformer)
             {
-                return ((MessageTransformer) transformer).transform(content, event);
+                return ((MessageTransformer) transformer).transform(content, castEvent());
             }
             else
             {
@@ -162,4 +162,8 @@ public final class FileContentWrapper
         }
     }
 
+    private org.mule.runtime.core.api.MuleEvent castEvent()
+    {
+        return (org.mule.runtime.core.api.MuleEvent) event;
+    }
 }
