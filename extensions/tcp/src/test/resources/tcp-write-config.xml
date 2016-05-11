@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule:mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:tcp="http://www.mulesoft.org/schema/mule/tcp"
+           xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+           xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      http://www.mulesoft.org/schema/mule/tcp http://www.mulesoft.org/schema/mule/tcp/current/mule-tcp.xsd">
+
+    <tcp:requester-config name="requester" host="localhost" port="8000">
+        <tcp:requester-connection/>
+        <tcp:protocol>
+            <tcp:length-protocol maxMessageLength="512"/>
+        </tcp:protocol>
+    </tcp:requester-config>
+
+    <mule:flow name="write">
+        <mule:set-payload value="test string"/>
+        <tcp:write config-ref="requester"/>
+    </mule:flow>
+</mule:mule>
