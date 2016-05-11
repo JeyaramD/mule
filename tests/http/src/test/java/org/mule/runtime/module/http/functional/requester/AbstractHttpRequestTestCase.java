@@ -6,6 +6,7 @@
  */
 package org.mule.runtime.module.http.functional.requester;
 
+import org.mule.extension.http.api.HttpConnector;
 import org.mule.functional.junit4.ExtensionFunctionalTestCase;
 import org.mule.module.socket.api.SocketsExtension;
 import org.mule.tck.junit4.rule.DynamicPort;
@@ -57,7 +58,7 @@ public class AbstractHttpRequestTestCase extends ExtensionFunctionalTestCase
     @Override
     protected Class<?>[] getAnnotatedExtensionClasses()
     {
-        return new Class<?>[] {SocketsExtension.class};
+        return new Class<?>[] {SocketsExtension.class, HttpConnector.class};
     }
 
     @Before
