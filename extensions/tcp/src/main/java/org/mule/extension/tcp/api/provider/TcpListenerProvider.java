@@ -8,57 +8,54 @@ package org.mule.extension.tcp.api.provider;
 
 import org.mule.extension.tcp.api.client.TcpListenerClient;
 import org.mule.extension.tcp.api.config.TcpListenerConfig;
-import org.mule.module.socket.api.TcpClientSocketProperties;
+import org.mule.extension.tcp.internals.ConnectionSettings;
 import org.mule.runtime.api.connection.ConnectionException;
+import org.mule.runtime.api.connection.ConnectionExceptionCode;
 import org.mule.runtime.api.connection.ConnectionHandlingStrategy;
 import org.mule.runtime.api.connection.ConnectionHandlingStrategyFactory;
 import org.mule.runtime.api.connection.ConnectionProvider;
 import org.mule.runtime.api.connection.ConnectionValidationResult;
 import org.mule.runtime.extension.api.annotation.Alias;
-import org.mule.runtime.extension.api.annotation.Parameter;
-import org.mule.runtime.extension.api.annotation.param.Optional;
-
-import java.io.IOException;
+import org.mule.runtime.extension.api.annotation.ParameterGroup;
 
 @Alias("listener")
 public class TcpListenerProvider implements ConnectionProvider<TcpListenerConfig, TcpListenerClient>
 {
-    @Parameter
-    private String host;
 
-    @Parameter
-    private Integer port;
-
-    @Parameter
-    @Optional
-    private TcpClientSocketProperties clientSocketProperties;
+    @ParameterGroup
+    ConnectionSettings settings;
 
     @Override
     public TcpListenerClient connect(TcpListenerConfig tcpListenerConfig) throws ConnectionException
     {
-        TcpListenerClient tcpListenerClient = null;
-        try
-        {
-            tcpListenerClient = new TcpListenerClient(tcpListenerConfig, host, port);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-        return tcpListenerClient;
+        return new TcpListenerClient(tcpListenerConfig, settings.getHost(), settings.getPort());
     }
 
     @Override
     public void disconnect(TcpListenerClient tcpConnection)
     {
-
+        try
+        {
+            tcpConnection.disconnect();
+        }
+        catch (ConnectionException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public ConnectionValidationResult validate(TcpListenerClient tcpListenerClient)
     {
-        //TODO
-        return ConnectionValidationResult.success();
+        if (tcpListenerClient.isValid())
+        {
+            return ConnectionValidationResult.success();
+        }
+        else
+        {
+            String msg = "Socket is not connected";
+            return ConnectionValidationResult.failure(msg, ConnectionExceptionCode.UNKNOWN, new ConnectionException(msg));
+        }
     }
 
     @Override

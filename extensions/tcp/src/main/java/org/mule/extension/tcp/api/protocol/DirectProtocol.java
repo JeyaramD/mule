@@ -6,8 +6,12 @@
  */
 package org.mule.extension.tcp.api.protocol;
 
+import org.mule.runtime.extension.api.annotation.Parameter;
+import org.mule.runtime.extension.api.annotation.param.Optional;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.MessageFormat;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -21,7 +25,7 @@ import org.apache.commons.logging.LogFactory;
  * stronger requirements on the underlying network).  On slow networks
  * {@link org.mule.transport.tcp.protocols.EOFProtocol} and
  * {@link org.mule.transport.tcp.protocols.LengthProtocol} may be more reliable.
- *
+ * <p>
  * <p>Writing simply writes the data to the socket.</p>
  */
 public class DirectProtocol extends AbstractByteProtocol
@@ -31,7 +35,11 @@ public class DirectProtocol extends AbstractByteProtocol
 
     private static final Log logger = LogFactory.getLog(DirectProtocol.class);
     private static final int DEFAULT_BUFFER_SIZE = 8192;
-    
+
+    @Parameter
+    @Optional(defaultValue = "true")
+    private boolean payloadOnly = true;
+
     protected int bufferSize;
 
     public DirectProtocol()
@@ -45,6 +53,7 @@ public class DirectProtocol extends AbstractByteProtocol
         this.bufferSize = bufferSize;
     }
 
+    @Override
     public Object read(InputStream is) throws IOException
     {
         return read(is, UNLIMITED);
@@ -52,9 +61,8 @@ public class DirectProtocol extends AbstractByteProtocol
 
     public Object read(InputStream is, int limit) throws IOException
     {
-        // this can grow on repeated reads
         ByteArrayOutputStream baos = new ByteArrayOutputStream(bufferSize);
-        
+
         try
         {
             byte[] buffer = new byte[bufferSize];
@@ -64,16 +72,9 @@ public class DirectProtocol extends AbstractByteProtocol
             do
             {
 
-                len = copy(is, buffer, baos, remain);
+                len = copy(is, buffer, baos, remain, rethrowExceptionOnRead);
                 remain = remaining(limit, remain, len);
                 repeat = EOF != len && remain > 0 && isRepeat(len, is.available());
-
-                if (logger.isDebugEnabled())
-                {
-                    logger.debug(MessageFormat.format(
-                            "len/limit/repeat: {0}/{1}/{2}",
-                            len, limit, repeat));
-                }
             }
             while (repeat);
         }
@@ -107,16 +108,19 @@ public class DirectProtocol extends AbstractByteProtocol
      * there was also the additional requirement that the previous transfer
      * completely used the transfer buffer.
      *
-     * @param len Amount transferred last call (-1 on EOF or socket error)
+     * @param len       Amount transferred last call (-1 on EOF or socket error)
      * @param available Amount available
      * @return true if the transfer should continue
      */
     protected boolean isRepeat(int len, int available)
     {
-        // previous logic - less reliable on slow networks
-//        return len == bufferSize && available > 0;
-        
         return available > 0;
+    }
+
+    @Override
+    public void write(OutputStream os, Object data) throws IOException
+    {
+        this.write(os, data, payloadOnly);
     }
 
 }

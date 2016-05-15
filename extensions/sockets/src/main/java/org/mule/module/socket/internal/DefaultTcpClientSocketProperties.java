@@ -9,14 +9,14 @@ package org.mule.module.socket.internal;
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.Parameter;
 import org.mule.runtime.extension.api.annotation.param.Optional;
-import org.mule.module.socket.api.TcpClientSocketProperties;
+import org.mule.module.socket.api.tcp.TcpClientSocketProperties;
 
 /**
  * Default mutable implementation of the {@code TcpClientSocketProperties} interface.
  *
  * @since 4.0
  */
-@Alias("client-socket-properties")
+@Alias("tcp-client-socket-properties")
 public class DefaultTcpClientSocketProperties extends AbstractTcpSocketProperties implements TcpClientSocketProperties
 {
     /**

@@ -29,4 +29,6 @@ public interface TcpProtocol
      * @throws IOException if an exception occurs
      */
     void write(OutputStream os, Object data) throws IOException;
+
+    boolean getRethrowExceptionOnRead();
 }

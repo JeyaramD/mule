@@ -7,6 +7,7 @@
 package org.mule.extension.tcp.api;
 
 import org.mule.extension.tcp.api.client.TcpRequesterClient;
+import org.mule.runtime.api.connection.ConnectionException;
 import org.mule.runtime.extension.api.annotation.param.Connection;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 
@@ -17,7 +18,7 @@ public class TcpRequesterOperations
                       //                 @Optional boolean rethrowExceptionOnRead,
                       //                 @Optional boolean payloadOnly,
                       //                 @Optional int maxMessageLength,
-                      @Optional(defaultValue = "#[payload]") Object data)
+                      @Optional(defaultValue = "#[payload]") Object data) throws ConnectionException
     {
         //
         client.write(data);

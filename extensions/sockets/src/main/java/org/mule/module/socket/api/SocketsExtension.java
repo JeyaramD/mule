@@ -6,6 +6,10 @@
  */
 package org.mule.module.socket.api;
 
+import org.mule.module.socket.api.tcp.TcpClientSocketProperties;
+import org.mule.module.socket.api.tcp.TcpServerSocketProperties;
+import org.mule.module.socket.api.udp.UdpClientSocketProperties;
+import org.mule.module.socket.api.udp.UdpServerSocketProperties;
 import org.mule.module.socket.internal.DefaultTcpServerSocketProperties;
 import org.mule.runtime.extension.api.annotation.Extension;
 import org.mule.runtime.extension.api.annotation.Parameter;
@@ -36,6 +40,20 @@ public class SocketsExtension
     @Parameter
     @Optional
     private TcpServerSocketProperties tcpServerSocketProperties;
+
+    /**
+     * Provides UDP configuration for client sockets.
+     */
+    @Parameter
+    @Optional
+    private UdpClientSocketProperties udpClientSocketProperties;
+
+    /**
+     * Provides UDP configuration for server sockets.
+     */
+    @Parameter
+    @Optional
+    private UdpServerSocketProperties udpServerSocketProperties;
 
     public TcpClientSocketProperties getTcpClientSocketProperties()
     {

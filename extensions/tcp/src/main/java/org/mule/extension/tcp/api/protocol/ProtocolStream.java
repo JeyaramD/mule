@@ -6,6 +6,7 @@
  */
 package org.mule.extension.tcp.api.protocol;
 
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -27,8 +28,7 @@ public class ProtocolStream extends OutputStream
     {
         if (!streamOk)
         {
-             throw new IllegalArgumentException("TCP protocol " + protocol.getClass().getSimpleName() +
-                     " does not support streaming output");
+             throw new IllegalArgumentException(String.format("TCP protocol '%s' does not support streaming output", protocol.getClass().getSimpleName()));
         }
     }
 

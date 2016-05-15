@@ -32,29 +32,19 @@ public class TcpRequesterConfig
     @Optional
     TcpProtocol protocol = new SafeProtocol();
 
-    @Parameter
-    Integer port;
-
-    @Parameter
-    String host;
-
     public TcpClientSocketProperties getTcpClientSocketProperties()
     {
         return tcpClientSocketProperties;
     }
+
 
     public TcpProtocol getProtocol()
     {
         return protocol;
     }
 
-    public Integer getPort()
+    public void setProtocol(TcpProtocol protocol)
     {
-        return port;
-    }
-
-    public String getHost()
-    {
-        return host;
+        this.protocol = protocol;
     }
 }

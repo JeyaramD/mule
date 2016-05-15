@@ -21,11 +21,15 @@ public class TcpRequesterClient
 
     private Socket socket;
     private TcpRequesterConfig config;
+    private String host;
+    private int port;
 
-    public TcpRequesterClient(TcpRequesterConfig config) throws ConnectionException
+    public TcpRequesterClient(TcpRequesterConfig config, String host, Integer port) throws ConnectionException
     {
         this.socket = new Socket();
         this.config = config;
+        this.host = host;
+        this.port = port;
         configureSocket();
     }
 
@@ -76,13 +80,12 @@ public class TcpRequesterClient
 
     public void connect() throws ConnectionException
     {
-        // todo validate
-        int port = config.getPort();
-        String host = config.getHost();
 
         try
         {
-            socket.connect(new InetSocketAddress(host, port));
+            InetSocketAddress address = new InetSocketAddress(host, port);
+            // TODO validate address InetAddressValidator from Apache commons
+            socket.connect(address);
         }
         catch (IOException e)
         {
@@ -93,12 +96,12 @@ public class TcpRequesterClient
 
     public void write(Object data) throws ConnectionException
     {
-        BufferedOutputStream outputStream = null;
+        BufferedOutputStream bos = null;
         try
         {
-            //outputStream = new BufferedOutputStream(socket.getOutputStream());
-            //config.getProtocol().write(outputStream, data);
-            config.getProtocol().write(socket.getOutputStream(), data);
+            bos = new BufferedOutputStream(socket.getOutputStream());
+            config.getProtocol().write(bos, data);
+            bos.flush();
         }
         catch (IOException e)
         {
@@ -126,6 +129,6 @@ public class TcpRequesterClient
 
     public boolean isValid()
     {
-        return socket.isConnected();
+        return socket.isConnected() && socket.isBound();
     }
 }

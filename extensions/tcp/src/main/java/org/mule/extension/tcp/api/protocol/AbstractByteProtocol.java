@@ -8,12 +8,13 @@
 package org.mule.extension.tcp.api.protocol;
 
 import org.mule.runtime.api.message.MuleMessage;
+import org.mule.runtime.core.util.IOUtils;
+import org.mule.runtime.extension.api.annotation.Parameter;
+import org.mule.runtime.extension.api.annotation.param.Optional;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,54 +24,65 @@ import org.slf4j.LoggerFactory;
  * protocols that had only a single write method taking just an array of bytes as a
  * parameter) to inherit from since they will all behave the same, i.e. if the object
  * is serializable, serialize it into an array of bytes and send it.
- * <p/>
- * <p>Note that the raw write method has changed name from <code>write</code> to
- * <code>writeByteArray</code>.  This is to remove ambiguity from the code.  In almost
- * all cases it is possible to call {@link #write(OutputStream, Object)} which
- * will, via {@link #write(OutputStream, Object)}, dispatch to
- * {@link #writeByteArray(OutputStream, byte[])}.</p>.
  */
 public abstract class AbstractByteProtocol implements TcpProtocol
 {
+
     private static final Logger logger = LoggerFactory.getLogger(DirectProtocol.class);
     private static final long PAUSE_PERIOD = 100;
     public static final int EOF = -1;
 
-    // make this really clear in subclasses, because otherwise people will forget
     public static final boolean STREAM_OK = true;
     public static final boolean NO_STREAM = false;
     private boolean streamOk;
-    private boolean rethrowExceptionOnRead = false;
-    //private ObjectSerializer objectSerializer;
-    //protected static int bufferSize = NumberUtils.toInt(System.getProperty(MuleProperties.MULE_STREAMING_BUFFER_SIZE), 4 * 1024);
+
     protected static int bufferSize = 8 * 4 * 1024;
+
+    /**
+     * Rethrow the exception if read fails
+     */
+    @Parameter
+    @Optional(defaultValue = "false")
+    protected boolean rethrowExceptionOnRead = false;
+
+    public boolean getRethrowExceptionOnRead()
+    {
+        return rethrowExceptionOnRead;
+    }
 
     public AbstractByteProtocol(boolean streamOk)
     {
         this.streamOk = streamOk;
     }
 
-    public void write(OutputStream os, Object data) throws IOException
+    public void write(OutputStream os, Object data, boolean payloadOnly) throws IOException
     {
         if (data instanceof InputStream)
         {
             if (streamOk)
             {
                 InputStream is = (InputStream) data;
-                copyLarge(is, os);
-                os.flush();
-                os.close();
-                is.close();
+                //copyLarge(is, os);
+                //os.flush();
+                //os.close();
+                //is.close();
+                writeByteArray(os, IOUtils.toByteArray(is));
             }
             else
             {
-                throw new IOException("TCP protocol " + (getClass().getSimpleName())
-                                      + " cannot handle streaming");
+                throw new IOException(String.format("TCP protocol '%s' cannot handle streaming", getClass().getSimpleName()));
             }
         }
         else if (data instanceof MuleMessage)
         {
-            write(os, ((MuleMessage) data).getPayload());
+            if (payloadOnly)
+            {
+                write(os, ((MuleMessage) data).getPayload(), payloadOnly);
+            }
+            else
+            {
+                // TODO write mule message write(os, data.by);
+            }
         }
         else if (data instanceof byte[])
         {
@@ -78,17 +90,11 @@ public abstract class AbstractByteProtocol implements TcpProtocol
         }
         else if (data instanceof String)
         {
-            // TODO SF: encoding is lost/ignored; it is probably a good idea to have
-            // a separate "stringEncoding" property on the protocol
             writeByteArray(os, ((String) data).getBytes());
         }
-        //else if (data instanceof Serializable)
-        //{
-        //    writeByteArray(os, objectSerializer.serialize(data));
-        //}
         else
         {
-            throw new IllegalArgumentException("Cannot serialize data: " + data);
+            throw new IllegalArgumentException(String.format("Cannot serialize data: '%s'", data));
         }
     }
 
@@ -97,18 +103,6 @@ public abstract class AbstractByteProtocol implements TcpProtocol
         os.write(data);
     }
 
-    /**
-     * Manage non-blocking reads and handle errors
-     *
-     * @param is     The input stream to read from
-     * @param buffer The buffer to read into
-     * @return The amount of data read (always non-zero, -1 on EOF or socket exception)
-     * @throws IOException other than socket exceptions
-     */
-    protected int safeRead(InputStream is, byte[] buffer) throws IOException
-    {
-        return safeRead(is, buffer, buffer.length);
-    }
 
     /**
      * Manage non-blocking reads and handle errors
@@ -119,56 +113,28 @@ public abstract class AbstractByteProtocol implements TcpProtocol
      * @return The amount of data read (always non-zero, -1 on EOF or socket exception)
      * @throws IOException other than socket exceptions
      */
-    protected int safeRead(InputStream is, byte[] buffer, int size) throws IOException
+    protected int safeRead(InputStream is, byte[] buffer, int size, boolean rethrowExceptionOnRead) throws IOException
     {
         int len;
-        try
+        do
         {
-            do
+            len = is.read(buffer, 0, size);
+            if (0 == len)
             {
-                len = is.read(buffer, 0, size);
-                if (0 == len)
+                // wait for non-blocking input stream
+                // use new lock since not expecting notification
+                try
                 {
-                    // wait for non-blocking input stream
-                    // use new lock since not expecting notification
-                    try
-                    {
-                        Thread.sleep(PAUSE_PERIOD);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        // no-op
-                    }
+                    Thread.sleep(PAUSE_PERIOD);
+                }
+                catch (InterruptedException e)
+                {
+                    // no-op
                 }
             }
-            while (0 == len);
-            return len;
         }
-        catch (SocketException e)
-        {
-            // do not pollute the log with a stacktrace, log only the message
-            logger.info("Socket exception occured: " + e.getMessage());
-            if (this.rethrowExceptionOnRead)
-            {
-                throw e;
-            }
-            else
-            {
-                return EOF;
-            }
-        }
-        catch (SocketTimeoutException e)
-        {
-            logger.debug("Socket timeout.");
-            if (this.rethrowExceptionOnRead)
-            {
-                throw e;
-            }
-            else
-            {
-                return EOF;
-            }
-        }
+        while (0 == len);
+        return len;
     }
 
     /**
@@ -180,9 +146,9 @@ public abstract class AbstractByteProtocol implements TcpProtocol
      * @return Amount of data transferred, or -1 on eof or socket error
      * @throws IOException On non-socket error
      */
-    protected int copy(InputStream source, byte[] buffer, OutputStream dest) throws IOException
+    protected int copy(InputStream source, byte[] buffer, OutputStream dest, boolean rethrowExceptionOnRead) throws IOException
     {
-        return copy(source, buffer, dest, buffer.length);
+        return copy(source, buffer, dest, buffer.length, rethrowExceptionOnRead);
     }
 
     /**
@@ -195,9 +161,9 @@ public abstract class AbstractByteProtocol implements TcpProtocol
      * @return Amount of data transferred, or -1 on eof or socket error
      * @throws IOException On non-socket error
      */
-    protected int copy(InputStream source, byte[] buffer, OutputStream dest, int size) throws IOException
+    protected int copy(InputStream source, byte[] buffer, OutputStream dest, int size, boolean rethrowExceptionOnRead) throws IOException
     {
-        int len = safeRead(source, buffer, size);
+        int len = safeRead(source, buffer, size, rethrowExceptionOnRead);
         if (len > 0)
         {
             dest.write(buffer, 0, len);
@@ -217,27 +183,6 @@ public abstract class AbstractByteProtocol implements TcpProtocol
         }
     }
 
-    //public ResponseOutputStream createResponse(Socket socket) throws IOException
-    //{
-    //    return new ResponseOutputStream(socket, new ProtocolStream(this, streamOk, socket.getOutputStream()));
-    //}
-    //
-    //public boolean isRethrowExceptionOnRead()
-    //{
-    //    return rethrowExceptionOnRead;
-    //}
-    //
-    //public void setRethrowExceptionOnRead(boolean rethrowExceptionOnRead)
-    //{
-    //    this.rethrowExceptionOnRead = rethrowExceptionOnRead;
-    //}
-    //
-    //@Inject
-    //@DefaultObjectSerializer
-    //public void setObjectSerializer(ObjectSerializer objectSerializer)
-    //{
-    //    this.objectSerializer = objectSerializer;
-    //}
 
     private long copyLarge(InputStream input, OutputStream output) throws IOException
     {

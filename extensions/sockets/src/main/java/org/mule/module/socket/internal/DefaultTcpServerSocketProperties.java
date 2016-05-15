@@ -9,14 +9,14 @@ package org.mule.module.socket.internal;
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.Parameter;
 import org.mule.runtime.extension.api.annotation.param.Optional;
-import org.mule.module.socket.api.TcpServerSocketProperties;
+import org.mule.module.socket.api.tcp.TcpServerSocketProperties;
 
 /**
  * Default mutable implementation of the {@code TcpServerSocketProperties} interface.
  *
  * @since 4.0
  */
-@Alias("server-socket-properties")
+@Alias("tcp-server-socket-properties")
 public class DefaultTcpServerSocketProperties extends AbstractTcpSocketProperties implements TcpServerSocketProperties
 {
 
@@ -42,10 +42,9 @@ public class DefaultTcpServerSocketProperties extends AbstractTcpSocketPropertie
      * The maximum queue length for incoming connections.
      */
     @Parameter
-    @Optional
-    private Integer receiveBacklog;
+    @Optional(defaultValue = "50")
+    private Integer receiveBacklog = 50;
 
-    @Override
     public Integer getReceiveBacklog()
     {
         return receiveBacklog;
@@ -56,7 +55,6 @@ public class DefaultTcpServerSocketProperties extends AbstractTcpSocketPropertie
         this.receiveBacklog = receiveBacklog;
     }
 
-    @Override
     public Boolean getReuseAddress()
     {
         return reuseAddress;
@@ -67,7 +65,6 @@ public class DefaultTcpServerSocketProperties extends AbstractTcpSocketPropertie
         this.reuseAddress = reuseAddress;
     }
 
-    @Override
     public Integer getServerTimeout()
     {
         return serverTimeout;

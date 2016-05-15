@@ -28,7 +28,6 @@ public class TcpListenerConfig
     @Optional
     TcpServerSocketProperties tcpServerSocketProperties = new DefaultTcpServerSocketProperties();
 
-
     @Parameter
     @Optional
     TcpProtocol protocol = new SafeProtocol();

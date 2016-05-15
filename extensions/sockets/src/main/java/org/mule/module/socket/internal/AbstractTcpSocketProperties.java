@@ -6,24 +6,17 @@
  */
 package org.mule.module.socket.internal;
 
+import org.mule.module.socket.api.tcp.TcpSocketProperties;
 import org.mule.runtime.extension.api.annotation.Parameter;
-import org.mule.runtime.extension.api.annotation.param.ConfigName;
 import org.mule.runtime.extension.api.annotation.param.Optional;
-import org.mule.module.socket.api.TcpSocketProperties;
 
 /**
  * Mutable base class for implementations of {@link TcpSocketProperties}
  *
  * @since 4.0
  */
-public abstract class AbstractTcpSocketProperties implements TcpSocketProperties
+public abstract class AbstractTcpSocketProperties extends AbstractSocketProperties implements TcpSocketProperties
 {
-
-    /**
-     * The name of this config object, so that it can be referenced by config elements.
-     */
-    @ConfigName
-    private String name;
 
     /**
      * If set, transmitted data is not collected together for greater efficiency but sent immediately.
@@ -35,15 +28,6 @@ public abstract class AbstractTcpSocketProperties implements TcpSocketProperties
     @Optional(defaultValue = "true")
     private Boolean sendTcpNoDelay = true;
 
-    /**
-     * This sets the SO_TIMEOUT value on client sockets. Reading from the socket will block for up to this long
-     * (in milliseconds) before the read fails.
-     * <p>
-     * A value of 0 (the default) causes the read to wait indefinitely (if no data arrives).
-     */
-    @Parameter
-    @Optional(defaultValue = "0")
-    private Integer timeout = 0;
 
     /**
      * This sets the SO_LINGER value. This is related to how long (in milliseconds) the socket will take to close so
@@ -52,22 +36,6 @@ public abstract class AbstractTcpSocketProperties implements TcpSocketProperties
     @Parameter
     @Optional
     private Integer linger;
-
-    // These options are undefined by default so that by default it is the OS TCP/IP stack that configures, or dynamically
-    // manages, these values.
-    /**
-     * The size of the buffer (in bytes) used when sending data, set on the socket itself.
-     */
-    @Parameter
-    @Optional
-    private Integer sendBufferSize;
-
-    /**
-     * The size of the buffer (in bytes) used when receiving data, set on the socket itself.
-     */
-    @Parameter
-    @Optional
-    private Integer receiveBufferSize;
 
     /**
      * Enables SO_KEEPALIVE behavior on open sockets. This automatically checks socket connections that are open but
@@ -80,36 +48,6 @@ public abstract class AbstractTcpSocketProperties implements TcpSocketProperties
     @Optional
     private Boolean keepAlive;
 
-    public String getName()
-    {
-        return name;
-    }
-
-    public void setName(String name)
-    {
-        this.name = name;
-    }
-
-    public Integer getSendBufferSize()
-    {
-        return sendBufferSize;
-    }
-
-    public void setSendBufferSize(Integer sendBufferSize)
-    {
-        this.sendBufferSize = sendBufferSize;
-    }
-
-    public Integer getReceiveBufferSize()
-    {
-        return receiveBufferSize;
-    }
-
-    public void setReceiveBufferSize(Integer receiveBufferSize)
-    {
-        this.receiveBufferSize = receiveBufferSize;
-    }
-
     public Boolean getSendTcpNoDelay()
     {
         return sendTcpNoDelay;
@@ -118,16 +56,6 @@ public abstract class AbstractTcpSocketProperties implements TcpSocketProperties
     public void setSendTcpNoDelay(Boolean sendTcpNoDelay)
     {
         this.sendTcpNoDelay = sendTcpNoDelay;
-    }
-
-    public Integer getTimeout()
-    {
-        return timeout;
-    }
-
-    public void setTimeout(Integer timeout)
-    {
-        this.timeout = timeout;
     }
 
     public Integer getLinger()

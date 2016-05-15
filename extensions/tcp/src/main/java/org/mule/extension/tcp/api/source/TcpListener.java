@@ -8,9 +8,12 @@ package org.mule.extension.tcp.api.source;
 
 import static java.lang.String.format;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mule.runtime.core.util.concurrent.ThreadNameHelper.getPrefix;
 import org.mule.extension.tcp.api.client.TcpListenerClient;
 import org.mule.extension.tcp.api.config.TcpListenerConfig;
+import org.mule.extension.tcp.internals.TcpInputStream;
+import org.mule.runtime.api.connection.ConnectionException;
 import org.mule.runtime.api.message.MuleMessage;
 import org.mule.runtime.api.message.NullPayload;
 import org.mule.runtime.api.metadata.DataType;
@@ -24,17 +27,23 @@ import org.mule.runtime.extension.api.annotation.param.Connection;
 import org.mule.runtime.extension.api.annotation.param.UseConfig;
 import org.mule.runtime.extension.api.runtime.source.Source;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Alias("listener")
-public class TcpListener extends Source<InputStream, ListenerTcpAttributes> implements FlowConstructAware
+public class TcpListener extends Source<Object, TcpAttributes> implements FlowConstructAware
 {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TcpListener.class);
     private ExecutorService executorService;
     private FlowConstruct flowConstruct;
 
@@ -48,6 +57,8 @@ public class TcpListener extends Source<InputStream, ListenerTcpAttributes> impl
     @Connection
     private TcpListenerClient client;
 
+    private AtomicBoolean stopRequested = new AtomicBoolean(false);
+
     @Override
     public void start() throws Exception
     {
@@ -57,42 +68,166 @@ public class TcpListener extends Source<InputStream, ListenerTcpAttributes> impl
 
     private void listen()
     {
-        Socket socket = client.connect();
-        processNewConnection(socket);
+        LOGGER.debug("Started listener");
+        Socket socket = null;
+        for (; ; )
+        {
+            if (isRequestedToStop())
+            {
+                return;
+            }
+
+            try
+            {
+                socket = client.connect();
+                if (socket == null)
+                {
+                    // socket.closed() was called
+                    return;
+                }
+                processNewConnection(socket);
+            }
+            catch (ConnectionException e)
+            {
+                e.printStackTrace();
+                sourceContext.getExceptionCallback().onException(e);
+            }
+
+        }
     }
 
-    private MuleMessage<InputStream, ListenerTcpAttributes> createMessage(Socket socket, ListenerTcpAttributes attributes)
+    private MuleMessage<Object, TcpAttributes> createMessage(Socket socket, TcpAttributes
+            attributes) throws IOException, ConnectionException
     {
         Object payload = NullPayload.getInstance();
         DataType dataType = DataTypeFactory.create(NullPayload.class);
-        MuleMessage<InputStream, ListenerTcpAttributes> message;
+        MuleMessage<Object, TcpAttributes> message;
 
-        try
+
+        if (socket.isConnected() && socket.isBound())
         {
-            if (socket.isConnected())
+            payload = receiveFromSocket(socket, config.getTcpServerSocketProperties().getTimeout());
+            if (payload == null)
             {
-                payload = config.getProtocol().read(socket.getInputStream());
-                dataType = DataTypeFactory.create(InputStream.class);
+                return (MuleMessage) new DefaultMuleMessage(NullPayload.getInstance(), dataType, attributes, muleContext);
             }
+
+            dataType = getTcpMessageDataType(DataTypeFactory.create(Object.class), attributes);
         }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+
 
         message = (MuleMessage) new DefaultMuleMessage(payload, dataType, attributes, muleContext);
         return message;
     }
 
+    private Object receiveFromSocket(Socket socket, int timeout) throws ConnectionException, IOException
+    {
+
+        DataInputStream underlyingIs = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+        TcpInputStream tis = new TcpInputStream(underlyingIs);
+
+        try
+        {
+            return config.getProtocol().read(tis);
+        }
+        catch (IOException e)
+        {
+            if (config.getProtocol().getRethrowExceptionOnRead())
+            {
+                throw e;
+            }
+
+            return null;
+        }
+        finally
+        {
+            if (!tis.isStreaming())
+            {
+                tis.close();
+            }
+        }
+    }
+
+    private DataType<Object> getTcpMessageDataType(DataType<?> originalDataType, TcpAttributes attributes)
+    {
+        DataType<Object> newDataType = DataTypeFactory.create(Object.class);
+        newDataType.setEncoding(originalDataType.getEncoding());
+
+        //String presumedMimeType = mimetypesFileTypeMap.getContentType(attributes.getPath());
+        //newDataType.setMimeType(presumedMimeType != null ? presumedMimeType : originalDataType.getMimeType());
+
+        return newDataType;
+    }
+
     private void processNewConnection(Socket socket)
     {
-        sourceContext.getMessageHandler().handle(createMessage(socket, new ListenerTcpAttributes()));
+        LOGGER.debug("Processing new connection");
+        if (isRequestedToStop())
+        {
+            return;
+        }
+
+        // TODO new thread with reading and creating message
+        try
+        {
+            sourceContext.getMessageHandler().handle(createMessage(socket, new TcpAttributes()));
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        catch (ConnectionException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void stop() throws Exception
+    public void stop()
     {
+        try
+        {
+            client.disconnect();
+        }
+        catch (ConnectionException e)
+        {
+            e.printStackTrace();
+        }
+        stopRequested.set(true);
+        shutdownExecutor();
+    }
 
+    private boolean isRequestedToStop()
+    {
+        return stopRequested.get() || Thread.currentThread().isInterrupted();
+    }
+
+
+    private void shutdownExecutor()
+    {
+        if (executorService == null)
+        {
+            return;
+        }
+
+        executorService.shutdownNow();
+        try
+        {
+            if (!executorService.awaitTermination(muleContext.getConfiguration().getShutdownTimeout(), MILLISECONDS))
+            {
+                if (LOGGER.isWarnEnabled())
+                {
+                    LOGGER.warn("Could not properly terminate pending events for directory listener on flow " + flowConstruct.getName());
+                }
+            }
+        }
+        catch (InterruptedException e)
+        {
+            if (LOGGER.isWarnEnabled())
+            {
+                LOGGER.warn("Got interrupted while trying to terminate pending events for directory listener on flow " + flowConstruct.getName());
+            }
+        }
     }
 
     @Override

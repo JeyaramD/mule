@@ -7,8 +7,6 @@
 package org.mule.extension.tcp.api.protocol;
 
 import org.mule.extension.tcp.internals.ResponseOutputStream;
-import org.mule.runtime.core.api.MuleException;
-import org.mule.runtime.core.api.lifecycle.Startable;
 import org.mule.runtime.extension.api.annotation.Parameter;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 
@@ -24,24 +22,33 @@ import java.net.Socket;
  * You should probably change to LengthProtocol.
  * Remember - both sender and receiver must use the same protocol.
  */
-public class SafeProtocol implements TcpProtocol, Startable
+public class SafeProtocol extends AbstractByteProtocol // implements Startable
 {
 
     public static final String COOKIE = "You are using SafeProtocol";
 
-    private TcpProtocol delegate = null; // new LengthProtocol();
+    private TcpProtocol delegate = new LengthProtocol();
     private TcpProtocol cookieProtocol = new LengthProtocol(COOKIE.length());
 
     @Parameter
     @Optional(defaultValue = "-1")
     private int maxMessageLeght;
 
+    @Parameter
+    @Optional(defaultValue = "true")
+    private boolean payloadOnly = true;
+
+    public SafeProtocol()
+    {
+        super(false);
+    }
 
     public Object read(InputStream is) throws IOException
     {
         if (assertSiblingSafe(is))
         {
-            Object result = delegate.read(is);
+            Object result = null;
+            result = delegate.read(is);
             if (null == result)
             {
                 // EOF after cookie but before data
@@ -123,11 +130,11 @@ public class SafeProtocol implements TcpProtocol, Startable
         delegate = new LengthProtocol(maxMessageLength);
     }
 
-    @Override
-    public void start() throws MuleException
-    {
-        delegate = new LengthProtocol(maxMessageLeght);
-    }
+    //@Override
+    //public void start() throws MuleException
+    //{
+    //    delegate = new LengthProtocol(maxMessageLeght);
+    //}
 
     //@Inject
     //@DefaultObjectSerializer

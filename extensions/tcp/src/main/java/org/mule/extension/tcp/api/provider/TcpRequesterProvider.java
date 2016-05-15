@@ -8,6 +8,7 @@ package org.mule.extension.tcp.api.provider;
 
 import org.mule.extension.tcp.api.client.TcpRequesterClient;
 import org.mule.extension.tcp.api.config.TcpRequesterConfig;
+import org.mule.extension.tcp.internals.ConnectionSettings;
 import org.mule.runtime.api.connection.ConnectionException;
 import org.mule.runtime.api.connection.ConnectionExceptionCode;
 import org.mule.runtime.api.connection.ConnectionHandlingStrategy;
@@ -15,15 +16,19 @@ import org.mule.runtime.api.connection.ConnectionHandlingStrategyFactory;
 import org.mule.runtime.api.connection.ConnectionProvider;
 import org.mule.runtime.api.connection.ConnectionValidationResult;
 import org.mule.runtime.extension.api.annotation.Alias;
+import org.mule.runtime.extension.api.annotation.ParameterGroup;
 
 @Alias("requester")
 public class TcpRequesterProvider implements ConnectionProvider<TcpRequesterConfig, TcpRequesterClient>
 {
 
+    @ParameterGroup
+    ConnectionSettings settings;
+
     @Override
     public TcpRequesterClient connect(TcpRequesterConfig tcpRequesterConfig) throws ConnectionException
     {
-        TcpRequesterClient client = new TcpRequesterClient(tcpRequesterConfig);
+        TcpRequesterClient client = new TcpRequesterClient(tcpRequesterConfig, settings.getHost(), settings.getPort());
         client.connect();
         return client;
     }
@@ -50,7 +55,8 @@ public class TcpRequesterProvider implements ConnectionProvider<TcpRequesterConf
         }
         else
         {
-            return ConnectionValidationResult.failure("Socket is not connected", ConnectionExceptionCode.UNKNOWN);
+            String msg = "Socket is not connected";
+            return ConnectionValidationResult.failure(msg, ConnectionExceptionCode.UNKNOWN, new ConnectionException(msg));
         }
     }
 

@@ -4,7 +4,9 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
-package org.mule.module.socket.api;
+package org.mule.module.socket.api.tcp;
+
+import org.mule.module.socket.api.SocketProperties;
 
 /**
  * Interface for objects that provide common TCP configuration that applies for both
@@ -14,18 +16,8 @@ package org.mule.module.socket.api;
  *
  * @since 4.0
  */
-public interface TcpSocketProperties
+public interface TcpSocketProperties extends SocketProperties
 {
-
-    /**
-     * The size of the buffer (in bytes) used when sending data, set on the socket itself.
-     */
-    Integer getSendBufferSize();
-
-    /**
-     * The size of the buffer (in bytes) used when receiving data, set on the socket itself.
-     */
-    Integer getReceiveBufferSize();
 
     /**
      * If set, transmitted data is not collected together for greater efficiency but sent immediately.
@@ -34,14 +26,6 @@ public interface TcpSocketProperties
      * traffic over latency is hardly ever a concern today.
      */
     Boolean getSendTcpNoDelay();
-
-    /**
-     * This sets the SO_TIMEOUT value on client sockets. Reading from the socket will block for up to this long
-     * (in milliseconds) before the read fails.
-     * <p>
-     * A value of 0 (the default) causes the read to wait indefinitely (if no data arrives).
-     */
-    Integer getTimeout();
 
     /**
      * This sets the SO_LINGER value. This is related to how long (in milliseconds) the socket will take to close so
