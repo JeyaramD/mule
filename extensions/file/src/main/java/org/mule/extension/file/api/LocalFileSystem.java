@@ -34,8 +34,6 @@ import org.mule.runtime.module.extension.file.api.lock.PathLock;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
-import javax.inject.Inject;
-
 /**
  * Implementation of {@link FileSystem} for file systems
  * mounted on the host operating system.
@@ -61,15 +59,12 @@ public final class LocalFileSystem extends AbstractFileSystem
     private final RenameCommand renameCommand;
     private final WriteCommand writeCommand;
 
-    @Inject
-    private MuleContext muleContext;
-
     /**
      * Creates a new instance
      *
      * @param config a {@link FileConnector} which acts as a config
      */
-    public LocalFileSystem(FileConnector config)
+    public LocalFileSystem(FileConnector config, MuleContext muleContext)
     {
         copyCommand = new LocalCopyCommand(this, config);
         createDirectoryCommand = new LocalCreateDirectoryCommand(this, config);
