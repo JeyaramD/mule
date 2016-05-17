@@ -62,7 +62,7 @@ public class SftpConnectionProvider extends AbstractFtpConnectionProvider<FtpCon
             throw new ConnectionException(e);
         }
 
-        return new SftpFileSystem(config, client);
+        return new SftpFileSystem(config, client, muleContext);
     }
 
 

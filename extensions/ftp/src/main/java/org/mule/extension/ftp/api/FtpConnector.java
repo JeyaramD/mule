@@ -35,6 +35,9 @@ import javax.inject.Inject;
 @Providers({ClassicFtpConnectionProvider.class, SftpConnectionProvider.class})
 public class FtpConnector implements FileConnectorConfig
 {
+
+    public static final String FTP_PROTOCOL = "ftp";
+
     @Inject
     private ConnectionManager connectionManager;
 

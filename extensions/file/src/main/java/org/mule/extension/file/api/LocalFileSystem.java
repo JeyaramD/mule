@@ -16,6 +16,7 @@ import org.mule.extension.file.internal.command.LocalReadCommand;
 import org.mule.extension.file.internal.command.LocalRenameCommand;
 import org.mule.extension.file.internal.command.LocalWriteCommand;
 import org.mule.extension.file.internal.lock.LocalPathLock;
+import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.util.ArrayUtils;
 import org.mule.runtime.module.extension.file.api.AbstractFileSystem;
 import org.mule.runtime.module.extension.file.api.FileAttributes;
@@ -32,6 +33,8 @@ import org.mule.runtime.module.extension.file.api.lock.PathLock;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+
+import javax.inject.Inject;
 
 /**
  * Implementation of {@link FileSystem} for file systems
@@ -58,6 +61,9 @@ public final class LocalFileSystem extends AbstractFileSystem
     private final RenameCommand renameCommand;
     private final WriteCommand writeCommand;
 
+    @Inject
+    private MuleContext muleContext;
+
     /**
      * Creates a new instance
      *
@@ -72,7 +78,7 @@ public final class LocalFileSystem extends AbstractFileSystem
         moveCommand = new LocalMoveCommand(this, config);
         readCommand = new LocalReadCommand(this, config);
         renameCommand = new LocalRenameCommand(this, config);
-        writeCommand = new LocalWriteCommand(this, config);
+        writeCommand = new LocalWriteCommand(this, config, muleContext);
     }
 
     @Override

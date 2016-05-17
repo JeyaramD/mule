@@ -11,7 +11,10 @@ import org.mule.extension.ftp.api.ftp.FtpFileSystem;
 import org.mule.extension.ftp.internal.ftp.connection.ClassicFtpFileSystem;
 import org.mule.runtime.api.connection.ConnectionProvider;
 import org.mule.runtime.api.connection.ConnectionValidationResult;
+import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.extension.api.annotation.Parameter;
+
+import javax.inject.Inject;
 
 /**
  * Base class for {@link ConnectionProvider} implementations which take a
@@ -24,6 +27,8 @@ import org.mule.runtime.extension.api.annotation.Parameter;
 public abstract class AbstractFtpConnectionProvider<Config extends FtpConnector, Connection extends FtpFileSystem>
         implements ConnectionProvider<Config, Connection>
 {
+    @Inject
+    protected MuleContext muleContext;
 
     /**
      * The FTP server host, such as www.mulesoft.com, localhost, or 192.168.0.1, etc

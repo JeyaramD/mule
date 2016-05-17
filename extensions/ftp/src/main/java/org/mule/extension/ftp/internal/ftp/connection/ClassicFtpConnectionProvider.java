@@ -80,7 +80,7 @@ public final class ClassicFtpConnectionProvider extends AbstractFtpConnectionPro
     @Override
     public ClassicFtpFileSystem connect(FtpConnector config) throws ConnectionException
     {
-        return new ClassicFtpFileSystem(config, createClient(config));
+        return new ClassicFtpFileSystem(config, createClient(config), muleContext);
     }
 
     private FTPClient createClient(FtpConnector config) throws ConnectionException

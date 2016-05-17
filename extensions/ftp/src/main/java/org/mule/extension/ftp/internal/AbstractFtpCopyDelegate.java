@@ -69,8 +69,8 @@ public abstract class AbstractFtpCopyDelegate implements FtpCopyDelegate
         }
         catch (ConnectionException e)
         {
-            throw command.exception(String.format("FTP Copy operations require the use of two FTP connections. An exception was found trying to obtain second connection to" +
-                                                  "copy the path '%s' to '%s'", source.getPath(), targetPath), e);
+            throw command.exception(format("FTP Copy operations require the use of two FTP connections. An exception was found trying to obtain second connection to" +
+                                           "copy the path '%s' to '%s'", source.getPath(), targetPath), e);
         }
         try
         {
@@ -124,7 +124,7 @@ public abstract class AbstractFtpCopyDelegate implements FtpCopyDelegate
             }
             else
             {
-                throw command.exception(String.format("Cannot copy file '%s' to path '%s' because it already exists", source.getPath(), target));
+                throw command.exception(format("Cannot copy file '%s' to path '%s' because it already exists", source.getPath(), target));
             }
         }
 
@@ -132,14 +132,14 @@ public abstract class AbstractFtpCopyDelegate implements FtpCopyDelegate
         {
             if (inputStream == null)
             {
-                throw command.exception(String.format("Could not read file '%s' while trying to copy it to remote path '%s'", source.getPath(), target));
+                throw command.exception(format("Could not read file '%s' while trying to copy it to remote path '%s'", source.getPath(), target));
             }
 
             writeCopy(target.toString(), inputStream, overwrite, writerConnection, event);
         }
         catch (Exception e)
         {
-            throw command.exception(String.format("Found exception while trying to copy file '%s' to remote path '%s'", source.getPath(), target), e);
+            throw command.exception(format("Found exception while trying to copy file '%s' to remote path '%s'", source.getPath(), target), e);
         }
     }
 

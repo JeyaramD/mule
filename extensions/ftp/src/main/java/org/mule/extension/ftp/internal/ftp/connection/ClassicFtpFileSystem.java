@@ -8,6 +8,7 @@ package org.mule.extension.ftp.internal.ftp.connection;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.EMPTY;
+import static org.mule.extension.ftp.api.FtpConnector.FTP_PROTOCOL;
 import static org.mule.runtime.core.config.i18n.MessageFactory.createStaticMessage;
 import org.mule.extension.ftp.api.FtpConnector;
 import org.mule.extension.ftp.api.ftp.FtpFileSystem;
@@ -46,8 +47,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPConnectionClosedException;
 import org.slf4j.Logger;
@@ -63,9 +62,7 @@ public final class ClassicFtpFileSystem extends AbstractFileSystem implements Ft
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClassicFtpFileSystem.class);
 
-    @Inject
-    private MuleContext muleContext;
-
+    private final MuleContext muleContext;
     private final FtpConnector config;
     private final FTPClient client;
     private final CopyCommand copyCommand;
@@ -84,10 +81,11 @@ public final class ClassicFtpFileSystem extends AbstractFileSystem implements Ft
      * @param config the {@link FtpConnector} through which {@code this} instance is used
      * @param client a ready to use {@link FTPClient}
      */
-    ClassicFtpFileSystem(FtpConnector config, FTPClient client)
+    ClassicFtpFileSystem(FtpConnector config, FTPClient client, MuleContext muleContext)
     {
         this.config = config;
         this.client = client;
+        this.muleContext = muleContext;
 
         copyCommand = new FtpCopyCommand(this, config, client);
         createDirectoryCommand = new FtpCreateDirectoryCommand(this, config, client);
@@ -96,7 +94,7 @@ public final class ClassicFtpFileSystem extends AbstractFileSystem implements Ft
         moveCommand = new FtpMoveCommand(this, config, client);
         readCommand = new FtpReadCommand(this, config, client);
         renameCommand = new FtpRenameCommand(this, config, client);
-        writeCommand = new FtpWriteCommand(this, config, client);
+        writeCommand = new FtpWriteCommand(this, config, client, muleContext);
     }
 
     /**
@@ -270,7 +268,7 @@ public final class ClassicFtpFileSystem extends AbstractFileSystem implements Ft
     {
         try
         {
-            return new URL("ftp", client.getRemoteAddress().toString(), client.getRemotePort(), path != null ? path.toString() : EMPTY);
+            return new URL(FTP_PROTOCOL, client.getRemoteAddress().toString(), client.getRemotePort(), path != null ? path.toString() : EMPTY);
         }
         catch (MalformedURLException e)
         {

@@ -7,6 +7,7 @@
 package org.mule.extension.ftp.api.sftp;
 
 import static org.apache.commons.lang.StringUtils.EMPTY;
+import static org.mule.extension.ftp.api.FtpConnector.FTP_PROTOCOL;
 import static org.mule.runtime.core.config.i18n.MessageFactory.createStaticMessage;
 import org.mule.extension.ftp.api.FtpConnector;
 import org.mule.extension.ftp.api.ftp.FtpFileSystem;
@@ -41,8 +42,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 
-import javax.inject.Inject;
-
 import org.apache.commons.net.ftp.FTPClient;
 
 /**
@@ -53,9 +52,7 @@ import org.apache.commons.net.ftp.FTPClient;
 public class SftpFileSystem extends AbstractFileSystem implements FtpFileSystem
 {
 
-    @Inject
-    private MuleContext muleContext;
-
+    private final MuleContext muleContext;
     protected final FtpConnector config;
     protected final SftpClient client;
     protected final CopyCommand copyCommand;
@@ -74,10 +71,11 @@ public class SftpFileSystem extends AbstractFileSystem implements FtpFileSystem
      * @param config the {@link FtpConnector} through which {@code this} instance is used
      * @param client a ready to use {@link FTPClient}
      */
-    public SftpFileSystem(FtpConnector config, SftpClient client)
+    public SftpFileSystem(FtpConnector config, SftpClient client, MuleContext muleContext)
     {
         this.config = config;
         this.client = client;
+        this.muleContext = muleContext;
 
         copyCommand = new SftpCopyCommand(this, config, client);
         createDirectoryCommand = new SftpCreateDirectoryCommand(this, config, client);
@@ -86,7 +84,7 @@ public class SftpFileSystem extends AbstractFileSystem implements FtpFileSystem
         moveCommand = new SftpMoveCommand(this, config, client);
         readCommand = new SftpReadCommand(this, config, client);
         renameCommand = new SftpRenameCommand(this, config, client);
-        writeCommand = new SftpWriteCommand(this, config, client);
+        writeCommand = new SftpWriteCommand(this, config, client, muleContext);
     }
 
     /**
@@ -142,7 +140,7 @@ public class SftpFileSystem extends AbstractFileSystem implements FtpFileSystem
     {
         try
         {
-            return new URL("ftp", client.getHost(), client.getPort(), path != null ? path.toString() : EMPTY);
+            return new URL(FTP_PROTOCOL, client.getHost(), client.getPort(), path != null ? path.toString() : EMPTY);
         }
         catch (MalformedURLException e)
         {

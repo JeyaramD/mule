@@ -6,13 +6,12 @@
  */
 package org.mule.runtime.core.internal.connection;
 
-import org.mule.runtime.core.api.MuleContext;
-import org.mule.runtime.core.api.MuleException;
-import org.mule.runtime.api.config.HasPoolingProfile;
-import org.mule.runtime.core.api.config.MuleProperties;
 import org.mule.runtime.api.config.PoolingProfile;
 import org.mule.runtime.api.connection.ConnectionException;
 import org.mule.runtime.api.connection.ConnectionProvider;
+import org.mule.runtime.core.api.MuleContext;
+import org.mule.runtime.core.api.MuleException;
+import org.mule.runtime.core.api.config.MuleProperties;
 import org.mule.runtime.core.api.lifecycle.Disposable;
 import org.mule.runtime.core.api.lifecycle.Lifecycle;
 import org.mule.runtime.core.api.retry.RetryPolicy;
@@ -31,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * @param <Connection> the generic type of the connections that the {@link #delegate} produces
  * @since 4.0
  */
-class LifecycleAwareConnectionProviderWrapper<Config, Connection> extends ConnectionProviderWrapper<Config, Connection> implements HasPoolingProfile
+class LifecycleAwareConnectionProviderWrapper<Config, Connection> extends ConnectionProviderWrapper<Config, Connection>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LifecycleAwareConnectionProviderWrapper.class);

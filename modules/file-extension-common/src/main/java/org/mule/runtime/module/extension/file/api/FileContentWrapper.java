@@ -9,6 +9,7 @@ package org.mule.runtime.module.extension.file.api;
 import static org.mule.runtime.core.util.Preconditions.checkArgument;
 import org.mule.runtime.api.message.MuleEvent;
 import org.mule.runtime.api.metadata.DataType;
+import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.transformer.MessageTransformer;
 import org.mule.runtime.core.api.transformer.Transformer;
 import org.mule.runtime.core.api.transformer.TransformerException;
@@ -35,18 +36,21 @@ public final class FileContentWrapper
 
     private final Object content;
     private final MuleEvent event;
+    private final MuleContext muleContext;
 
     /**
      * Creates a new instance
      *
      * @param content the content to be wrapped
      */
-    public FileContentWrapper(Object content, MuleEvent event)
+    public FileContentWrapper(Object content, MuleEvent event, MuleContext muleContext)
     {
         checkArgument(content != null, "content cannot be null");
         checkArgument(event != null, "event cannot be null");
+
         this.content = content;
         this.event = event;
+        this.muleContext = muleContext;
     }
 
     /**
@@ -130,7 +134,7 @@ public final class FileContentWrapper
         Transformer transformer;
         try
         {
-            transformer = castEvent().getMuleContext().getRegistry().lookupTransformer(sourceDataType, targetDataType);
+            transformer = muleContext.getRegistry().lookupTransformer(sourceDataType, targetDataType);
         }
         catch (TransformerException e)
         {

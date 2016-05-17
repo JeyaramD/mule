@@ -13,6 +13,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import org.mule.extension.file.api.FileConnector;
 import org.mule.extension.file.api.LocalFileSystem;
 import org.mule.runtime.api.message.MuleEvent;
+import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.module.extension.file.api.FileContentWrapper;
 import org.mule.runtime.module.extension.file.api.FileWriteMode;
 import org.mule.runtime.module.extension.file.api.FileWriterVisitor;
@@ -36,12 +37,15 @@ import java.nio.file.StandardOpenOption;
 public final class LocalWriteCommand extends LocalFileCommand implements WriteCommand
 {
 
+    private final MuleContext muleContext;
+
     /**
      * {@inheritDoc}
      */
-    public LocalWriteCommand(LocalFileSystem fileSystem, FileConnector config)
+    public LocalWriteCommand(LocalFileSystem fileSystem, FileConnector config, MuleContext muleContext)
     {
         super(fileSystem, config);
+        this.muleContext = muleContext;
     }
 
     /**
@@ -58,7 +62,7 @@ public final class LocalWriteCommand extends LocalFileCommand implements WriteCo
 
         try (OutputStream out = getOutputStream(path, openOptions, mode))
         {
-            new FileContentWrapper(content, event).accept(new FileWriterVisitor(out, event));
+            new FileContentWrapper(content, event, muleContext).accept(new FileWriterVisitor(out, event, muleContext));
         }
         catch (Exception e)
         {

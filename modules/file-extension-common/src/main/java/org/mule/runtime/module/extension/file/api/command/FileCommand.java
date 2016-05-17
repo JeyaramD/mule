@@ -63,31 +63,17 @@ public abstract class FileCommand<C extends FileConnectorConfig, F extends FileS
             return;
         }
 
-        Lock lock = fileSystem.createMuleLock("file-recursive-mkdir-" + path.toString());
-        lock.lock();
-        try
+        Path parentFolder = path.getParent();
+        if (!exists(parentFolder))
         {
-            if (exists(path))
+            if (createParentFolder)
             {
-                return;
+                mkdirs(parentFolder);
             }
-
-            Path parentFolder = path.getParent();
-            if (!exists(parentFolder))
+            else
             {
-                if (createParentFolder)
-                {
-                    mkdirs(parentFolder);
-                }
-                else
-                {
-                    throw new IllegalArgumentException(format("Cannot write to file '%s' because path to it doesn't exist. Consider setting the 'createParentFolder' attribute to 'true'", path));
-                }
+                throw new IllegalArgumentException(format("Cannot write to file '%s' because path to it doesn't exist. Consider setting the 'createParentFolder' attribute to 'true'", path));
             }
-        }
-        finally
-        {
-            lock.unlock();
         }
     }
 

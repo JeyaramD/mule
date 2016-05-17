@@ -11,6 +11,7 @@ import org.mule.extension.ftp.api.FtpConnector;
 import org.mule.extension.ftp.api.sftp.SftpFileSystem;
 import org.mule.extension.ftp.internal.sftp.connection.SftpClient;
 import org.mule.runtime.api.message.MuleEvent;
+import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.module.extension.file.api.FileAttributes;
 import org.mule.runtime.module.extension.file.api.FileContentWrapper;
 import org.mule.runtime.module.extension.file.api.FileWriteMode;
@@ -33,12 +34,15 @@ public final class SftpWriteCommand extends SftpCommand implements WriteCommand
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SftpWriteCommand.class);
 
+    private final MuleContext muleContext;
+
     /**
      * {@inheritDoc}
      */
-    public SftpWriteCommand(SftpFileSystem fileSystem, FtpConnector config, SftpClient client)
+    public SftpWriteCommand(SftpFileSystem fileSystem, FtpConnector config, SftpClient client, MuleContext muleContext)
     {
         super(fileSystem, config, client);
+        this.muleContext = muleContext;
     }
 
     /**
@@ -65,7 +69,7 @@ public final class SftpWriteCommand extends SftpCommand implements WriteCommand
 
         try (OutputStream outputStream = getOutputStream(path, mode))
         {
-            new FileContentWrapper(content, event).accept(new FileWriterVisitor(outputStream, event));
+            new FileContentWrapper(content, event, muleContext).accept(new FileWriterVisitor(outputStream, event, muleContext));
             LOGGER.debug("Successfully wrote to path {}", path.toString());
         }
         catch (Exception e)
